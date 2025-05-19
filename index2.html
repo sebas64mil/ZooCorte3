@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Gestión de Enclosures</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+
+    button {
+      margin-right: 10px;
+      padding: 10px 15px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    input {
+      margin: 5px;
+      padding: 5px;
+      font-size: 16px;
+    }
+
+    #output div {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin: 5px 0;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Gestión de Enclosures</h1>
+
+  <label for="enclosureCount">Cantidad de Enclosures a generar:</label>
+  <input type="number" id="enclosureCount" min="1" value="1">
+
+  <label for="animalCount">Animales por Enclosure:</label>
+  <input type="number" id="animalCount" min="1" value="1">
+
+  <button id="generateBtn">Generar Datos Aleatorios</button>
+  <button id="showEnclosuresBtn">Mostrar Enclosures en consola</button>
+
+  <script type="module">
+    import { db } from './modules/firebase_init.js';
+    import { collection, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    const zooId = "zooid";
+
+    async function fetchHierarchy() {
+      const enclosureSnap = await getDocs(collection(db, `Zoo/${zooId}/Enclosure`));
+
+      for (const enclosure of enclosureSnap.docs) {
+        const enclosureId = enclosure.id;
+        console.group(`🦓 Enclosure: ${enclosureId}`);
+        console.log(enclosure.data());
+
+        const animalsSnap = await getDocs(collection(db, `Zoo/${zooId}/Enclosure/${enclosureId}/animal`));
+        for (const animal of animalsSnap.docs) {
+          const animalData = animal.data();
+          console.group(`🐾 Animal: ${animal.id}`);
+          console.log(animalData);
+          console.groupEnd();
+        }
+
+        console.groupEnd();
+      }
+    }
+
+    document.getElementById("showEnclosuresBtn").addEventListener("click", () => {
+      console.clear();
+      console.log("📋 Cargando datos desde Firestore...");
+      fetchHierarchy();
+    });
+
+    document.getElementById("generateBtn").addEventListener("click", async () => {
+      const enclosureCount = parseInt(document.getElementById("enclosureCount").value);
+      const animalCount = parseInt(document.getElementById("animalCount").value);
+
+      if (isNaN(enclosureCount) || enclosureCount <= 0 || isNaN(animalCount) || animalCount <= 0) {
+        alert("Por favor ingresa números válidos mayores que cero.");
+        return;
+      }
+
+      console.clear();
+      console.log(`Iniciando generación de ${enclosureCount} enclosures con ${animalCount} animales cada uno...`);
+
+      const inhabitOptions = ["terrestrial", "acuatico"];
+      const nameOptions = ["Desierto", "Pradera", "Templado", "Taiga", "Tundra"];
+      const weatherOptions = ["tropical", "seco", "templado", "continental", "polar"];
+      const genderOptions = ["male", "fem"];
+      const animalNameOptions = [
+        "Jaguar", "Nutria", "Tortuga", "Tucán", "Iguana",
+        "Flamenco", "Capibara", "Anaconda", "Delfín", "Zorro"
+      ];
+
+      const existingSnap = await getDocs(collection(db, `Zoo/${zooId}/Enclosure`));
+      let enclosureCounter = existingSnap.size + 1;
+
+      for (let i = 0; i < enclosureCount; i++) {
+        const newEnclosureId = `idEnclosure_${enclosureCounter++}`;
+        const newEnclosureData = {
+          inhabit: randomItem(inhabitOptions),
+          name: randomItem(nameOptions),
+          size: Math.floor(Math.random() * (32 - 18 + 1)) + 18,
+          weather: randomItem(weatherOptions)
+        };
+        await setDoc(doc(db, `Zoo/${zooId}/Enclosure/${newEnclosureId}`), newEnclosureData);
+        console.log(`✅ Enclosure creado: ${newEnclosureId}`, newEnclosureData);
+
+        for (let j = 1; j <= animalCount; j++) {
+          const animalId = `idAnimal_${j}`;
+          const animalData = {
+            name: randomItem(animalNameOptions),
+            gender: randomItem(genderOptions),
+            date_of_birth: randomDateTimestamp2022(),
+            enclosureId: newEnclosureId
+          };
+          await setDoc(doc(db, `Zoo/${zooId}/Enclosure/${newEnclosureId}/animal/${animalId}`), animalData);
+          console.log(`🐾 Animal agregado a ${newEnclosureId}: ${animalId}`, animalData);
+        }
+      }
+
+      console.log("🎉 Generación completa. Mostrando jerarquía...");
+      await fetchHierarchy();
+      alert(`Se generaron ${enclosureCount} enclosures con ${animalCount} animales cada uno.`);
+    });
+
+    function randomItem(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function randomDateTimestamp2022() {
+      const start = new Date("2022-01-01").getTime();
+      const end = new Date("2022-12-31").getTime();
+      return new Date(start + Math.random() * (end - start));
+    }
+  </script>
+</body>
+
+</html>
