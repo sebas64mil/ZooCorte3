@@ -1,16 +1,19 @@
 {
-  "name": "firebaseweb",
+  "name": "mixeddb_excercise",
   "version": "1.0.0",
-  "description": "This a web implementation of a firebase nosql database in a node enviroment",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Memo Reyes",
+  "keywords": [],
+  "author": "",
   "license": "ISC",
+  "description": "",
   "dependencies": {
+    "cors": "^2.8.5",
     "express": "^5.1.0",
-    "firebase": "^11.5.0",
-    "firebase-admin": "^13.2.0"
+    "firebase": "^11.7.1",
+    "multer": "^1.4.5-lts.2",
+    "mysql2": "^3.14.1"
   }
 }
