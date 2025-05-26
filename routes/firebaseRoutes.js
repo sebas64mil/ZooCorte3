@@ -10,7 +10,7 @@ router.get("/enclosures", async (req, res) => {
   try {
     const snapshot = await db.collection("Zoo/zooid/Enclosure").get();
     const enclosures = [];
-    snapshot.forEach(doc => {
+    snapshot.forEach((doc) => {
       enclosures.push({ id: doc.id, ...doc.data() });
     });
     res.json(enclosures);
@@ -19,19 +19,64 @@ router.get("/enclosures", async (req, res) => {
     res.status(500).send("Error al obtener los enclosures");
   }
 });
+////////////////////////////////////////////////////////////////////
+// POST: Registro manual de enclosure
+router.post("/manual-register", async (req, res) => {
+  try {
+    const { zooId, enclosureId, inhabit, name, size, weather } = req.body;
 
+    if (!zooId || !enclosureId || !inhabit || !name || !size || !weather) {
+      return res.status(400).json({ error: "Faltan campos obligatorios." });
+    }
+
+    const enclosureData = {
+      inhabit,
+      name,
+      size: parseInt(size, 10),
+      weather,
+    };
+
+    await db
+      .collection("Zoo")
+      .doc(zooId)
+      .collection("Enclosure")
+      .doc(enclosureId)
+      .set(enclosureData);
+
+    return res.status(200).json({ message: "Enclosure registrado con éxito." });
+  } catch (error) {
+    console.error("Error en manual-register:", error);
+    return res.status(500).json({ error: "Error interno del servidor." });
+  }
+});
+
+///////////////////////////////////////////////////////////////////
 // POST: Generar enclosures con animales
 router.post("/generate", async (req, res) => {
   const { enclosureCount, animalCount } = req.body;
   const zooId = "zooid";
 
   const nameOptions = ["Desierto", "Pradera", "Templado", "Taiga", "Tundra"];
-  const weatherOptions = ["tropical", "seco", "templado", "continental", "polar"];
+  const weatherOptions = [
+    "tropical",
+    "seco",
+    "templado",
+    "continental",
+    "polar",
+  ];
   const inhabitOptions = ["terrestrial", "acuatico"];
   const genderOptions = ["male", "fem"];
   const animalNameOptions = [
-    "Jaguar", "Nutria", "Tortuga", "Tucán", "Iguana",
-    "Flamenco", "Capibara", "Anaconda", "Delfín", "Zorro"
+    "Jaguar",
+    "Nutria",
+    "Tortuga",
+    "Tucán",
+    "Iguana",
+    "Flamenco",
+    "Capibara",
+    "Anaconda",
+    "Delfín",
+    "Zorro",
   ];
 
   function randomItem(arr) {
@@ -54,7 +99,7 @@ router.post("/generate", async (req, res) => {
         inhabit: randomItem(inhabitOptions),
         name: randomItem(nameOptions),
         size: Math.floor(Math.random() * (32 - 18 + 1)) + 18,
-        weather: randomItem(weatherOptions)
+        weather: randomItem(weatherOptions),
       };
 
       await db.doc(`Zoo/${zooId}/Enclosure/${enclosureId}`).set(enclosureData);
@@ -65,9 +110,11 @@ router.post("/generate", async (req, res) => {
           name: randomItem(animalNameOptions),
           gender: randomItem(genderOptions),
           date_of_birth: randomDate2022(),
-          enclosureId: enclosureId
+          enclosureId: enclosureId,
         };
-        await db.doc(`Zoo/${zooId}/Enclosure/${enclosureId}/animal/${animalId}`).set(animalData);
+        await db
+          .doc(`Zoo/${zooId}/Enclosure/${enclosureId}/animal/${animalId}`)
+          .set(animalData);
       }
     }
 
