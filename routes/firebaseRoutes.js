@@ -8,7 +8,7 @@ const db = getFirestore(firebaseApp);
 // GET all enclosures
 router.get("/enclosures", async (req, res) => {
   try {
-    const snapshot = await db.collection("Zoo/zooid/Enclosure").get();
+    const snapshot = await db.collection("Zoo").doc("zooid").collection("Enclosure").get();
     const enclosures = [];
     snapshot.forEach((doc) => {
       enclosures.push({ id: doc.id, ...doc.data() });
@@ -19,21 +19,59 @@ router.get("/enclosures", async (req, res) => {
     res.status(500).send("Error al obtener los enclosures");
   }
 });
+
+
+
+/////////////////////////////
+
+// GET enclosure by ID
+
+router.get("/enclosures/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const docRef = db.collection("Zoo").doc("zooid").collection("Enclosure").doc(id);
+    const doc = await docRef.get();
+
+    if (!doc.exists) {
+      return res.status(404).send("Enclosure no encontrado");
+    }
+
+    res.json({ id: doc.id, ...doc.data() });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error al obtener el enclosure");
+  }
+});
+
+
 ////////////////////////////////////////////////////////////////////
-// POST: Registro manual de enclosure
 router.post("/manual-register", async (req, res) => {
   try {
-    const { zooId, enclosureId, inhabit, name, size, weather } = req.body;
+    const { zooId, inhabit, name, size, weather } = req.body;
 
-    if (!zooId || !enclosureId || !inhabit || !name || !size || !weather) {
+    if (!zooId || !inhabit || !name || !size || !weather) {
       return res.status(400).json({ error: "Faltan campos obligatorios." });
     }
+
+    if (zooId.toLowerCase() === "zoo") {
+      return res.status(400).json({
+        error: "El ID del zoo no puede ser 'Zoo'. Usa el ID correcto, como 'zooid'.",
+      });
+    }
+
+    // Obtener el número actual de enclosures
+    const existingSnap = await db.collection(`Zoo/${zooId}/Enclosure`).get();
+    const enclosureCounter = existingSnap.size + 1;
+
+    // Crear el ID con el mismo formato del automático
+    const enclosureId = `idEnclosure_${enclosureCounter}`;
 
     const enclosureData = {
       inhabit,
       name,
       size: parseInt(size, 10),
-      weather,
+      weather
     };
 
     await db
@@ -43,17 +81,20 @@ router.post("/manual-register", async (req, res) => {
       .doc(enclosureId)
       .set(enclosureData);
 
-    return res.status(200).json({ message: "Enclosure registrado con éxito." });
+    return res.status(200).json({ message: "Enclosure registrado con éxito.", enclosureId });
   } catch (error) {
     console.error("Error en manual-register:", error);
     return res.status(500).json({ error: "Error interno del servidor." });
   }
 });
 
+
+
+
 ///////////////////////////////////////////////////////////////////
 // POST: Generar enclosures con animales
 router.post("/generate", async (req, res) => {
-  const { enclosureCount, animalCount } = req.body;
+  const { enclosureCount } = req.body;
   const zooId = "zooid";
 
   const nameOptions = ["Desierto", "Pradera", "Templado", "Taiga", "Tundra"];
@@ -65,28 +106,9 @@ router.post("/generate", async (req, res) => {
     "polar",
   ];
   const inhabitOptions = ["terrestrial", "acuatico"];
-  const genderOptions = ["male", "fem"];
-  const animalNameOptions = [
-    "Jaguar",
-    "Nutria",
-    "Tortuga",
-    "Tucán",
-    "Iguana",
-    "Flamenco",
-    "Capibara",
-    "Anaconda",
-    "Delfín",
-    "Zorro",
-  ];
 
   function randomItem(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
-  }
-
-  function randomDate2022() {
-    const start = new Date("2022-01-01").getTime();
-    const end = new Date("2022-12-31").getTime();
-    return new Date(start + Math.random() * (end - start));
   }
 
   try {
@@ -103,22 +125,9 @@ router.post("/generate", async (req, res) => {
       };
 
       await db.doc(`Zoo/${zooId}/Enclosure/${enclosureId}`).set(enclosureData);
-
-      for (let j = 1; j <= animalCount; j++) {
-        const animalId = `idAnimal_${j}`;
-        const animalData = {
-          name: randomItem(animalNameOptions),
-          gender: randomItem(genderOptions),
-          date_of_birth: randomDate2022(),
-          enclosureId: enclosureId,
-        };
-        await db
-          .doc(`Zoo/${zooId}/Enclosure/${enclosureId}/animal/${animalId}`)
-          .set(animalData);
-      }
     }
 
-    res.status(200).send("Enclosures y animales generados exitosamente.");
+    res.status(200).send("Enclosures generados exitosamente.");
   } catch (error) {
     console.error(error);
     res.status(500).send("Error al generar enclosures.");

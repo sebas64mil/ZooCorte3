@@ -1,26 +1,30 @@
-document.getElementById("generateBtn").addEventListener("click", async () => {
-  const enclosureCount = parseInt(document.getElementById("enclosureCount").value);
-  const animalCount = parseInt(document.getElementById("animalCount").value);
+// Registro automático
+const generateBtn = document.getElementById("generateBtn");
+if (generateBtn) {
+  generateBtn.addEventListener("click", async () => {
+    const enclosureCount = parseInt(document.getElementById("enclosureCount").value);
 
-  const res = await fetch("/api/firebase/generate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ enclosureCount, animalCount })
+    try {
+      const res = await fetch("/api/firebase/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enclosureCount })
+      });
+
+      const text = await res.text();
+      alert(text);
+    } catch (err) {
+      console.error(err);
+      alert("Error al generar enclosures automáticamente.");
+    }
   });
+}
 
-  const text = await res.text();
-  alert(text);
-});
-
-document.getElementById("getBtn").addEventListener("click", async () => {
-  const res = await fetch("/api/firebase/enclosures");
-  const enclosures = await res.json();
-  document.getElementById("output").textContent = JSON.stringify(enclosures, null, 2);
-});
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-document.getElementById("RegisterButtonEnclosure").addEventListener("click", async () => {
-    const zooId = "Zoo"; // Cambia por el ID real o hazlo dinámico
+// Registro manual
+const registerBtn = document.getElementById("RegisterButtonEnclosure");
+if (registerBtn) {
+  registerBtn.addEventListener("click", async () => {
+    const zooId = "zooid";
     const enclosureId = document.getElementById("enclosureId").value.trim();
     const inhabit = document.getElementById("inhabit").value.trim();
     const name = document.getElementById("name").value.trim();
@@ -28,36 +32,38 @@ document.getElementById("RegisterButtonEnclosure").addEventListener("click", asy
     const weather = document.getElementById("weather").value.trim();
 
     if (!enclosureId || !inhabit || !name || !size || !weather) {
-        alert("Por favor completa todos los campos.");
-        return;
+      alert("Por favor completa todos los campos.");
+      return;
     }
 
     const data = {
-        zooId,
-        enclosureId,
-        inhabit,
-        name,
-        size: parseInt(size, 10),
-        weather
+      zooId,
+      enclosureId,
+      inhabit,
+      name,
+      size: parseInt(size, 10),
+      weather
     };
 
     try {
-        const res = await fetch("/api/firebase/manual-register", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
-        });
+      const res = await fetch("/api/firebase/manual-register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
 
-        const result = await res.json();
+      const result = await res.json();
 
-        if (res.ok) {
-            alert("¡Enclosure registrado exitosamente!");
-        } else {
-            alert("Error al registrar: " + result.error);
-        }
+      if (res.ok) {
+        alert("¡Enclosure registrado exitosamente!");
+      } else {
+        alert("Error al registrar: " + result.error);
+      }
     } catch (error) {
-        console.error("Error al registrar enclosure:", error);
-        alert("Ocurrió un error al registrar el enclosure.");
+      console.error("Error al registrar enclosure:", error);
+      alert("Ocurrió un error al registrar el enclosure.");
     }
-});
+  });
+}
+
 
