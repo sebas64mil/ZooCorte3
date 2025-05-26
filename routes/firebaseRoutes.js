@@ -1,6 +1,6 @@
 const express = require("express");
 const { getFirestore } = require("firebase-admin/firestore");
-const firebaseApp = require("../firebase/firebase");
+const firebaseApp = require("../firebase/firebase.js");
 const router = express.Router();
 
 const db = getFirestore(firebaseApp);
