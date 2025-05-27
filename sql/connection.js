@@ -3,7 +3,7 @@ const config = {
     host: 'localhost',
     user: 'root',
     password: 'root',
-    database: 'TeamsMatches'
+    database: 'zoo'
 };
 
 class SqlConnection{

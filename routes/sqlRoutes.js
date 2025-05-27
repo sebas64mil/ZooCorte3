@@ -1,63 +1,78 @@
-const express = require('express');
-const SqlService = require('../sql/connection.js'); // Asegúrate de que la ruta sea correcta
+const express = require("express");
+const { getFirestore } = require("firebase-admin/firestore");
+const firebaseApp = require("../firebase/firebase.js");
+const SqlService = require("../sql/connection.js");
+
 const router = express.Router();
+const dbFirestore = getFirestore(firebaseApp);
 
-// Insertar jugador
-router.post('/sqlPlayers', async (req, res) => {
-  // Expect Teams_idTeams and Teams_Matches_idMatches to be sent in the request body
-  const { name, minutesPlayed, numberOfPasses, shotAccuracy, missedGoals, cards} = req.body;
+// MIGRATE: Firebase → MySQL
+router.post("/enclosuresSet", async (req, res) => {
+  const sql = new SqlService();
+  try {
+    await sql.connectToDb();
+
+    const snapshot = await dbFirestore
+      .collection("Zoo")
+      .doc("zooid")
+      .collection("Enclosure")
+      .get();
+
+    const enclosures = [];
+    snapshot.forEach((doc) => {
+      enclosures.push({ id: doc.id, ...doc.data() });
+    });
+
+    console.log("Datos obtenidos de Firebase:", enclosures);
+
+    let inserted = 0;
+
+    for (const enc of enclosures) {
+      try {
+        // Validaciones mínimas
+        const enclosureId = enc.id?.slice(0, 30) || "";
+        const name = enc.name || "";
+        const habitat_typ = enc.inhabit || "unknown"; // evita null
+        const size_sqm = Number(enc.size) || 0;
+        const weather = enc.weather || "unknown";
+
+        if (!habitat_typ) continue; // omitir si falta obligatorio
+
+        await sql.query(
+          "INSERT INTO enclosures (idenclosures, name, habitat_typ, size_sqm, weather) VALUES (?, ?, ?, ?, ?)",
+          [enclosureId, name, habitat_typ, size_sqm, weather]
+        );
+        inserted++;
+      } catch (err) {
+        console.warn(`Error al insertar enclosure ${enc.id}:`, err.message);
+      }
+    }
+
+    res.status(200).json({
+      message: `${inserted} enclosures migrados exitosamente a SQL.`,
+    });
+  } catch (err) {
+    console.error("Error en migración:", err);
+    res.status(500).send("Error general al migrar enclosures.");
+  } finally {
+    await sql.closeConnection();
+  }
+});
+
+
+router.get('/enclosuresGet', async (req, res) => {
   const db = new SqlService();
   try {
     await db.connectToDb();
-    await db.query(
-      "INSERT INTO Players (name, minutesPlayed, numberOfPasses, shotAccuracy,missedGoals, ` cards`,Teams_idTeams,Teams_Matches_idMatches) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-      [name, minutesPlayed, numberOfPasses, shotAccuracy, missedGoals, cards,1,1]
-    );
-    res.status(200).send("Player registered.");
+    const enclosures = await db.query("SELECT * FROM enclosures");
+    res.status(200).json(enclosures);
   } catch (err) {
     console.error("SQL error:", err);
-    res.status(500).send("Error registering player.");
+    res.status(500).send("Error fetching enclosures.");
   } finally {
     await db.closeConnection();
   }
 });
 
-// Insertar equipo
-router.post('/sqlTeams', async (req, res) => {
-  const { nameTeam, squad, positionTable, coach } = req.body;
-  const db = new SqlService();
-  try {
-    await db.connectToDb();
-    await db.query(
-      "INSERT INTO Teams (nameTeam, squad, positionTable, coach,Matches_idMatches) VALUES (?, ?, ?, ?,?)",
-      [nameTeam, squad, positionTable, coach, 1]
-    );
-    res.status(200).send("Team registered.");
-  } catch (err) {
-    console.error("SQL error:", err);
-    res.status(500).send("Error registering team.");
-  } finally {
-    await db.closeConnection();
-  }
-});
-
-// Insertar partido
-router.post('/sqlMatches', async (req, res) => {
-  const { NameTeam1, NameTeam2, location, result, numberOfSpectators } = req.body;
-  const db = new SqlService();
-  try {
-    await db.connectToDb();
-    await db.query(
-      "INSERT INTO Matches (NameTeam1, NameTeam2, location, result, numberOfSpectators) VALUES (?, ?, ?, ?, ?)",
-      [NameTeam1, NameTeam2, location, result, numberOfSpectators]
-    );
-    res.status(200).send("Match registered.");
-  } catch (err) {
-    console.error("SQL error:", err);
-    res.status(500).send("Error registering match.");
-  } finally {
-    await db.closeConnection();
-  }
-});
 
 module.exports = router;

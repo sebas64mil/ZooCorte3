@@ -83,3 +83,25 @@ if (getByIdBtn) {
     }
   });
 }
+
+
+const migrateBtn = document.getElementById("migrateBtn");
+
+if (migrateBtn) {
+  migrateBtn.addEventListener("click", async () => {
+    try {
+      const response = await fetch("/api/sql/enclosuresSet", {
+        method: "POST",
+      });
+
+      const result = await response.json();
+      console.log("Resultado de migración:", result);
+
+      alert(result.message);
+    } catch (err) {
+      console.error("Error en la migración:", err);
+      alert("Ocurrió un error durante la migración.");
+    }
+  });
+}
+
