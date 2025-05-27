@@ -1,7 +1,9 @@
 document.getElementById("loadEnclosuresBtn").addEventListener("click", async () => {
   const container = document.getElementById("enclosuresContainer");
+
   try {
-    container.innerHTML = "Cargando datos...";
+    container.innerHTML = "<p>Cargando datos...</p>";
+
     const res = await fetch("/api/sql/enclosuresGet");
     if (!res.ok) throw new Error("Error al obtener los enclosures");
 
@@ -12,30 +14,33 @@ document.getElementById("loadEnclosuresBtn").addEventListener("click", async () 
       return;
     }
 
-    let html = `<table border="1" cellpadding="5" cellspacing="0">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Nombre</th>
-          <th>Habitat</th>
-          <th>Tamaño (sqm)</th>
-          <th>Clima</th>
-        </tr>
-      </thead>
-      <tbody>`;
+    let html = `
+      <table class="table-result">
+        <thead>
+          <tr>
+            <th class="th-cell">ID</th>
+            <th class="th-cell">Nombre</th>
+            <th class="th-cell">Hábitat</th>
+            <th class="th-cell">Tamaño (sqm)</th>
+            <th class="th-cell">Clima</th>
+          </tr>
+        </thead>
+        <tbody>`;
 
     enclosures.forEach((enc) => {
-      html += `<tr>
-        <td>${enc.idenclosures}</td>
-        <td>${enc.name}</td>
-        <td>${enc.habitat_typ}</td>
-        <td>${enc.size_sqm}</td>
-        <td>${enc.weather}</td>
-      </tr>`;
+      html += `
+        <tr>
+          <td class="td-cell">${enc.idenclosures}</td>
+          <td class="td-cell">${enc.name}</td>
+          <td class="td-cell">${enc.habitat_typ}</td>
+          <td class="td-cell">${enc.size_sqm}</td>
+          <td class="td-cell">${enc.weather}</td>
+        </tr>`;
     });
 
-    html += "</tbody></table>";
+    html += `</tbody></table>`;
     container.innerHTML = html;
+
   } catch (error) {
     container.innerHTML = `<p style="color: red;">${error.message}</p>`;
     console.error(error);

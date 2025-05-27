@@ -15,28 +15,25 @@ if (getBtn) {
 
       // Crear tabla
       const table = document.createElement("table");
-      table.border = "1";
-      table.style.borderCollapse = "collapse";
-      table.style.marginTop = "10px";
+      table.classList.add("table-result");
 
       // Encabezado
       const header = table.insertRow();
       ["ID", "Habitantes", "Nombre", "Tamaño", "Clima"].forEach((text) => {
         const th = document.createElement("th");
         th.textContent = text;
-        th.style.padding = "8px";
-        th.style.backgroundColor = "#f2f2f2";
+        th.classList.add("th-cell");
         header.appendChild(th);
       });
 
       // Filas con datos
       enclosures.forEach((enc) => {
         const row = table.insertRow();
-        row.insertCell().textContent = enc.id || "N/A";
-        row.insertCell().textContent = enc.inhabit || "N/A";
-        row.insertCell().textContent = enc.name || "N/A";
-        row.insertCell().textContent = enc.size || "N/A";
-        row.insertCell().textContent = enc.weather || "N/A";
+        [enc.id, enc.inhabit, enc.name, enc.size, enc.weather].forEach((val) => {
+          const td = row.insertCell();
+          td.textContent = val || "N/A";
+          td.classList.add("td-cell");
+        });
       });
 
       output.appendChild(table);
@@ -46,7 +43,6 @@ if (getBtn) {
     }
   });
 }
-
 
 const getByIdBtn = document.getElementById("getByIdBtn");
 if (getByIdBtn) {
@@ -65,18 +61,23 @@ if (getByIdBtn) {
         outputById.innerHTML = `<p>No se encontró la enclosure con ID "${id}".</p>`;
         return;
       }
+
       const enclosure = await res.json();
 
-      outputById.innerHTML = `
-        <h3>Resultado:</h3>
-        <ul>
-          <li><strong>ID:</strong> ${enclosure.id}</li>
-          <li><strong>Habitantes:</strong> ${enclosure.inhabit}</li>
-          <li><strong>Nombre:</strong> ${enclosure.name}</li>
-          <li><strong>Tamaño:</strong> ${enclosure.size}</li>
-          <li><strong>Clima:</strong> ${enclosure.weather}</li>
-        </ul>
+      const resultHTML = `
+        <div class="output-box">
+          <h3 class="subtitle">Resultado:</h3>
+          <ul>
+            <li><strong>ID:</strong> ${enclosure.id}</li>
+            <li><strong>Habitantes:</strong> ${enclosure.inhabit}</li>
+            <li><strong>Nombre:</strong> ${enclosure.name}</li>
+            <li><strong>Tamaño:</strong> ${enclosure.size}</li>
+            <li><strong>Clima:</strong> ${enclosure.weather}</li>
+          </ul>
+        </div>
       `;
+
+      outputById.innerHTML = resultHTML;
     } catch (err) {
       console.error(err);
       alert("Error al obtener la enclosure.");
@@ -84,9 +85,7 @@ if (getByIdBtn) {
   });
 }
 
-
 const migrateBtn = document.getElementById("migrateBtn");
-
 if (migrateBtn) {
   migrateBtn.addEventListener("click", async () => {
     try {
@@ -103,5 +102,4 @@ if (migrateBtn) {
       alert("Ocurrió un error durante la migración.");
     }
   });
-}
-
+};
